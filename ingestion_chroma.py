@@ -1,37 +1,17 @@
-import os
-import pinecone
-from langchain.vectorstores import Pinecone
-from langchain.embeddings import OpenAIEmbeddings
-from langchain.document_loaders import PyPDFLoader
+from langchain.document_loaders import DirectoryLoader
+from langchain.embeddings.openai import OpenAIEmbeddings
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from dotenv import load_dotenv, find_dotenv
-load_dotenv(find_dotenv(), override=True)
+from langchain.vectorstores import Chroma
 
-PINECONE_API_KEY = os.environ.get('PINECONE_API_KEY')
-PINECONE_ENV = os.environ.get('PINECONE_ENV')
+from dotenv import load_dotenv
+import os
 
-embeddings = OpenAIEmbeddings()
+load_dotenv()
 
-loader = PyPDFLoader("docs/CLT.pdf")
-data = loader.load()
+openai_api_key=os.getenv('OPENAI_API_KEY', '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')
 
-text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=0)
-texts = text_splitter.split_documents(data)
+os.environ["OPENAI_API_KEY"] = "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"
 
-pc = Pinecone(
-    api_key=PINECONE_API_KEY,
-    environment=PINECONE_ENV
-)
+loader = DirectoryLoader('./docs', glob="**/*.pdf", show_progress=True)
 
-index_name = "linuxtips"
-if index_name not in pc.list_indexes():
-    pc.create_index(index_name, dimension=1536)
-
-index = pc.Index(index_name)
-
-docsearch = pc.from_texts([t.page_content for t in texts], embeddings, index_name=index_name)
-
-# Test
-# query = "o que são as férias?"
-# docs = docsearch.similarity_search(query)
-# print(docs[0])
+docs = loader.load()
